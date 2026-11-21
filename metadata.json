@@ -1,0 +1,6 @@
+{
+  "name": "Mankamana Guest House",
+  "description": "Luxury boutique guest house and serene accommodations in Birgunj, Nepal. Explore rooms, facilities, interactive 3D suite previews, and submit booking enquiries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

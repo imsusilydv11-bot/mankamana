@@ -1,0 +1,446 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrator account authorized to manage hotel operations.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "name", "role", "createdAt"]
+    },
+    "Room": {
+      "title": "Room",
+      "description": "Guest room or suite listing at Mankamana Guest House.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "type": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 3000
+        },
+        "priceNpr": {
+          "type": "number"
+        },
+        "maxGuests": {
+          "type": "integer"
+        },
+        "bedType": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "sizeSqFt": {
+          "type": "integer"
+        },
+        "amenities": {
+          "type": "array",
+          "description": "Up to 20 room amenities"
+        },
+        "images": {
+          "type": "array",
+          "description": "Up to 10 room image URLs"
+        },
+        "isAvailable": {
+          "type": "boolean"
+        },
+        "isFeatured": {
+          "type": "boolean"
+        },
+        "displayOrder": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "name",
+        "slug",
+        "type",
+        "description",
+        "priceNpr",
+        "maxGuests",
+        "bedType",
+        "sizeSqFt",
+        "amenities",
+        "images",
+        "isAvailable",
+        "isFeatured",
+        "displayOrder",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "BookingEnquiry": {
+      "title": "BookingEnquiry",
+      "description": "Guest booking enquiry requiring administrator review and confirmation.",
+      "type": "object",
+      "properties": {
+        "guestName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 30
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "checkInDate": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "maxLength": 10
+        },
+        "checkOutDate": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "maxLength": 10
+        },
+        "adults": {
+          "type": "integer"
+        },
+        "children": {
+          "type": "integer"
+        },
+        "roomId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "roomType": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "specialRequests": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "status": {
+          "type": "string",
+          "enum": ["New", "Contacted", "Confirmed", "Cancelled", "Completed"]
+        },
+        "adminNotes": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "guestName",
+        "phone",
+        "email",
+        "checkInDate",
+        "checkOutDate",
+        "adults",
+        "children",
+        "roomId",
+        "roomType",
+        "specialRequests",
+        "status",
+        "adminNotes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GalleryItem": {
+      "title": "GalleryItem",
+      "description": "Categorized photograph for the public hotel gallery.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Exterior", "Reception", "Bedrooms", "Bathrooms", "Dining", "Common Areas"]
+        },
+        "imageUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "displayOrder": {
+          "type": "integer"
+        },
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "title",
+        "category",
+        "imageUrl",
+        "caption",
+        "displayOrder",
+        "isEnabled",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Facility": {
+      "title": "Facility",
+      "description": "Hotel facility or service item.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 1000
+        },
+        "iconName": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "displayOrder": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "name",
+        "category",
+        "description",
+        "iconName",
+        "imageUrl",
+        "isEnabled",
+        "displayOrder",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Testimonial": {
+      "title": "Testimonial",
+      "description": "Guest testimonial displayed on the public website.",
+      "type": "object",
+      "properties": {
+        "guestName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "guestOrigin": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "rating": {
+          "type": "integer"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1000
+        },
+        "stayType": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "guestName",
+        "guestOrigin",
+        "rating",
+        "quote",
+        "stayType",
+        "isEnabled",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WebsiteSettings": {
+      "title": "WebsiteSettings",
+      "description": "Editable global branding, hero, about, contact, and SEO settings.",
+      "type": "object",
+      "properties": {
+        "hotelName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "tagline": { "type": "string", "maxLength": 160 },
+        "locationLabel": { "type": "string", "maxLength": 100 },
+        "heroTitle": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "heroSubtitle": { "type": "string", "maxLength": 240 },
+        "heroIntro": { "type": "string", "maxLength": 800 },
+        "heroImageUrl": { "type": "string", "maxLength": 1000 },
+        "aboutTitle": { "type": "string", "maxLength": 160 },
+        "aboutHeading": { "type": "string", "maxLength": 180 },
+        "aboutBody": { "type": "string", "maxLength": 3000 },
+        "hospitalityNote": { "type": "string", "maxLength": 1500 },
+        "comfortNote": { "type": "string", "maxLength": 1500 },
+        "aboutImageUrl": { "type": "string", "maxLength": 1000 },
+        "phone": { "type": "string", "maxLength": 60 },
+        "whatsapp": { "type": "string", "maxLength": 60 },
+        "email": { "type": "string", "maxLength": 160 },
+        "address": { "type": "string", "maxLength": 300 },
+        "googleMapsUrl": { "type": "string", "maxLength": 1000 },
+        "mapLat": { "type": "number" },
+        "mapLng": { "type": "number" },
+        "facebookUrl": { "type": "string", "maxLength": 500 },
+        "instagramUrl": { "type": "string", "maxLength": 500 },
+        "currency": { "type": "string", "maxLength": 12 },
+        "defaultLanguage": { "type": "string", "enum": ["en", "ne"] },
+        "seoTitle": { "type": "string", "maxLength": 120 },
+        "seoDescription": { "type": "string", "maxLength": 320 },
+        "diningEnabled": { "type": "boolean" },
+        "bookingNotice": { "type": "string", "maxLength": 600 },
+        "footerNote": { "type": "string", "maxLength": 400 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "hotelName",
+        "locationLabel",
+        "heroTitle",
+        "heroIntro",
+        "currency",
+        "defaultLanguage",
+        "diningEnabled",
+        "updatedAt"
+      ]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Public contact form enquiry sent to hotel management.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 160 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "subject": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "message": { "type": "string", "minLength": 5, "maxLength": 2000 },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "phone", "subject", "message", "isRead", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Whitelisted admin users allowed to manage hotel content and enquiries."
+    },
+    "/rooms/{roomId}": {
+      "schema": { "$ref": "#/entities/Room" },
+      "description": "Hotel room inventory and suite details."
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/BookingEnquiry" },
+      "description": "Guest booking enquiries (create-only for public, full management for admins)."
+    },
+    "/gallery/{itemId}": {
+      "schema": { "$ref": "#/entities/GalleryItem" },
+      "description": "Categorized gallery photographs."
+    },
+    "/facilities/{facilityId}": {
+      "schema": { "$ref": "#/entities/Facility" },
+      "description": "Guest house amenities and facilities."
+    },
+    "/testimonials/{testimonialId}": {
+      "schema": { "$ref": "#/entities/Testimonial" },
+      "description": "Verified guest testimonials."
+    },
+    "/websiteSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/WebsiteSettings" },
+      "description": "Global site configuration and CMS text."
+    },
+    "/contactMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/ContactMessage" },
+      "description": "Direct guest contact messages."
+    }
+  }
+}

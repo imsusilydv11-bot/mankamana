@@ -1,0 +1,304 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+    function isAdmin() {
+      return isVerified() && (
+        request.auth.token.email == 'alnisrpurchase@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Blueprints
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['email', 'name', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['email', 'name', 'role', 'createdAt']) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 160 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.role == 'admin' &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidRoom(data) {
+      return data.keys().hasAll([
+          'name', 'slug', 'type', 'description', 'priceNpr', 'maxGuests',
+          'bedType', 'sizeSqFt', 'amenities', 'images', 'isAvailable',
+          'isFeatured', 'displayOrder', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'name', 'slug', 'type', 'description', 'priceNpr', 'maxGuests',
+          'bedType', 'sizeSqFt', 'amenities', 'images', 'isAvailable',
+          'isFeatured', 'displayOrder', 'createdAt', 'updatedAt'
+        ]) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.slug is string && data.slug.size() >= 2 && data.slug.size() <= 120 && data.slug.matches('^[a-z0-9-]+$') &&
+        data.type is string && data.type.size() >= 2 && data.type.size() <= 60 &&
+        data.description is string && data.description.size() >= 10 && data.description.size() <= 3000 &&
+        data.priceNpr is number && data.priceNpr >= 0 && data.priceNpr <= 1000000 &&
+        data.maxGuests is int && data.maxGuests >= 1 && data.maxGuests <= 20 &&
+        data.bedType is string && data.bedType.size() >= 2 && data.bedType.size() <= 80 &&
+        data.sizeSqFt is int && data.sizeSqFt >= 50 && data.sizeSqFt <= 10000 &&
+        data.amenities is list && data.amenities.size() <= 20 &&
+        (data.amenities.size() == 0 || data.amenities[0] is string) &&
+        data.images is list && data.images.size() <= 10 &&
+        (data.images.size() == 0 || data.images[0] is string) &&
+        data.isAvailable is bool &&
+        data.isFeatured is bool &&
+        data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll([
+          'guestName', 'phone', 'email', 'checkInDate', 'checkOutDate',
+          'adults', 'children', 'roomId', 'roomType', 'specialRequests',
+          'status', 'adminNotes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'guestName', 'phone', 'email', 'checkInDate', 'checkOutDate',
+          'adults', 'children', 'roomId', 'roomType', 'specialRequests',
+          'status', 'adminNotes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.guestName is string && data.guestName.size() >= 2 && data.guestName.size() <= 120 &&
+        data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        data.checkInDate is string && data.checkInDate.size() == 10 && data.checkInDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.checkOutDate is string && data.checkOutDate.size() == 10 && data.checkOutDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.adults is int && data.adults >= 1 && data.adults <= 20 &&
+        data.children is int && data.children >= 0 && data.children <= 20 &&
+        data.roomId is string && data.roomId.size() <= 128 &&
+        data.roomType is string && data.roomType.size() >= 2 && data.roomType.size() <= 120 &&
+        data.specialRequests is string && data.specialRequests.size() <= 1500 &&
+        data.status in ['New', 'Contacted', 'Confirmed', 'Cancelled', 'Completed'] &&
+        data.adminNotes is string && data.adminNotes.size() <= 2000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidGalleryItem(data) {
+      return data.keys().hasAll([
+          'title', 'category', 'imageUrl', 'caption', 'displayOrder', 'isEnabled', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'category', 'imageUrl', 'caption', 'displayOrder', 'isEnabled', 'createdAt', 'updatedAt'
+        ]) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 120 &&
+        data.category in ['Exterior', 'Reception', 'Bedrooms', 'Bathrooms', 'Dining', 'Common Areas'] &&
+        data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 1000 &&
+        data.caption is string && data.caption.size() <= 400 &&
+        data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 1000 &&
+        data.isEnabled is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFacility(data) {
+      return data.keys().hasAll([
+          'name', 'category', 'description', 'iconName', 'imageUrl', 'isEnabled', 'displayOrder', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'name', 'category', 'description', 'iconName', 'imageUrl', 'isEnabled', 'displayOrder', 'createdAt', 'updatedAt'
+        ]) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.category is string && data.category.size() >= 2 && data.category.size() <= 60 &&
+        data.description is string && data.description.size() >= 5 && data.description.size() <= 1000 &&
+        data.iconName is string && data.iconName.size() <= 50 &&
+        data.imageUrl is string && data.imageUrl.size() <= 1000 &&
+        data.isEnabled is bool &&
+        data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTestimonial(data) {
+      return data.keys().hasAll([
+          'guestName', 'guestOrigin', 'rating', 'quote', 'stayType', 'isEnabled', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'guestName', 'guestOrigin', 'rating', 'quote', 'stayType', 'isEnabled', 'createdAt', 'updatedAt'
+        ]) &&
+        data.guestName is string && data.guestName.size() >= 2 && data.guestName.size() <= 100 &&
+        data.guestOrigin is string && data.guestOrigin.size() <= 100 &&
+        data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+        data.quote is string && data.quote.size() >= 10 && data.quote.size() <= 1000 &&
+        data.stayType is string && data.stayType.size() <= 80 &&
+        data.isEnabled is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidWebsiteSettings(data) {
+      return data.keys().hasAll([
+          'hotelName', 'locationLabel', 'heroTitle', 'heroIntro', 'currency', 'defaultLanguage', 'diningEnabled', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'hotelName', 'tagline', 'locationLabel', 'heroTitle', 'heroSubtitle', 'heroIntro',
+          'heroImageUrl', 'aboutTitle', 'aboutHeading', 'aboutBody', 'hospitalityNote',
+          'comfortNote', 'aboutImageUrl', 'phone', 'whatsapp', 'email', 'address',
+          'googleMapsUrl', 'mapLat', 'mapLng', 'facebookUrl', 'instagramUrl', 'currency',
+          'defaultLanguage', 'seoTitle', 'seoDescription', 'diningEnabled', 'bookingNotice',
+          'footerNote', 'updatedAt'
+        ]) &&
+        data.hotelName is string && data.hotelName.size() >= 2 && data.hotelName.size() <= 120 &&
+        data.locationLabel is string && data.locationLabel.size() <= 100 &&
+        data.heroTitle is string && data.heroTitle.size() >= 2 && data.heroTitle.size() <= 180 &&
+        data.heroIntro is string && data.heroIntro.size() <= 800 &&
+        data.currency is string && data.currency.size() <= 12 &&
+        data.defaultLanguage in ['en', 'ne'] &&
+        data.diningEnabled is bool &&
+        data.updatedAt is timestamp &&
+        (!('tagline' in data) || (data.tagline is string && data.tagline.size() <= 160)) &&
+        (!('heroSubtitle' in data) || (data.heroSubtitle is string && data.heroSubtitle.size() <= 240)) &&
+        (!('heroImageUrl' in data) || (data.heroImageUrl is string && data.heroImageUrl.size() <= 1000)) &&
+        (!('aboutTitle' in data) || (data.aboutTitle is string && data.aboutTitle.size() <= 160)) &&
+        (!('aboutHeading' in data) || (data.aboutHeading is string && data.aboutHeading.size() <= 180)) &&
+        (!('aboutBody' in data) || (data.aboutBody is string && data.aboutBody.size() <= 3000)) &&
+        (!('hospitalityNote' in data) || (data.hospitalityNote is string && data.hospitalityNote.size() <= 1500)) &&
+        (!('comfortNote' in data) || (data.comfortNote is string && data.comfortNote.size() <= 1500)) &&
+        (!('aboutImageUrl' in data) || (data.aboutImageUrl is string && data.aboutImageUrl.size() <= 1000)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 60)) &&
+        (!('whatsapp' in data) || (data.whatsapp is string && data.whatsapp.size() <= 60)) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 160)) &&
+        (!('address' in data) || (data.address is string && data.address.size() <= 300)) &&
+        (!('googleMapsUrl' in data) || (data.googleMapsUrl is string && data.googleMapsUrl.size() <= 1000)) &&
+        (!('mapLat' in data) || (data.mapLat is number)) &&
+        (!('mapLng' in data) || (data.mapLng is number)) &&
+        (!('facebookUrl' in data) || (data.facebookUrl is string && data.facebookUrl.size() <= 500)) &&
+        (!('instagramUrl' in data) || (data.instagramUrl is string && data.instagramUrl.size() <= 500)) &&
+        (!('seoTitle' in data) || (data.seoTitle is string && data.seoTitle.size() <= 120)) &&
+        (!('seoDescription' in data) || (data.seoDescription is string && data.seoDescription.size() <= 320)) &&
+        (!('bookingNotice' in data) || (data.bookingNotice is string && data.bookingNotice.size() <= 600)) &&
+        (!('footerNote' in data) || (data.footerNote is string && data.footerNote.size() <= 400));
+    }
+
+    function isValidContactMessage(data) {
+      return data.keys().hasAll(['name', 'email', 'phone', 'subject', 'message', 'isRead', 'createdAt']) &&
+        data.keys().hasOnly(['name', 'email', 'phone', 'subject', 'message', 'isRead', 'createdAt']) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        data.phone is string && data.phone.size() <= 30 &&
+        data.subject is string && data.subject.size() >= 2 && data.subject.size() <= 160 &&
+        data.message is string && data.message.size() >= 5 && data.message.size() <= 2000 &&
+        data.isRead is bool &&
+        data.createdAt is timestamp;
+    }
+
+    // Admins collection
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (isAdmin() || (isSignedIn() && request.auth.uid == adminId));
+      allow list: if isAdmin();
+      allow create: if isValidId(adminId) && isAdmin() && isValidAdmin(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(adminId) && isAdmin() && isValidAdmin(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(adminId) && isAdmin() && request.auth.uid != adminId;
+    }
+
+    // Rooms collection
+    match /rooms/{roomId} {
+      allow get: if isValidId(roomId);
+      allow list: if true;
+      allow create: if isValidId(roomId) && isAdmin() && isValidRoom(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(roomId) && isAdmin() && isValidRoom(incoming()) &&
+        incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(roomId) && isAdmin();
+    }
+
+    // Bookings collection
+    match /bookings/{bookingId} {
+      allow get: if isValidId(bookingId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(bookingId) && isValidBooking(incoming()) &&
+        incoming().status == 'New' &&
+        incoming().adminNotes == '' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(bookingId) && isAdmin() && isValidBooking(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'guestName', 'phone', 'email', 'checkInDate', 'checkOutDate',
+          'adults', 'children', 'roomId', 'roomType', 'specialRequests',
+          'status', 'adminNotes', 'updatedAt'
+        ]);
+      allow delete: if isValidId(bookingId) && isAdmin();
+    }
+
+    // Gallery collection
+    match /gallery/{itemId} {
+      allow get: if isValidId(itemId) && (existing().isEnabled == true || isAdmin());
+      allow list: if resource.data.isEnabled == true || isAdmin();
+      allow create: if isValidId(itemId) && isAdmin() && isValidGalleryItem(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(itemId) && isAdmin() && isValidGalleryItem(incoming()) &&
+        incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(itemId) && isAdmin();
+    }
+
+    // Facilities collection
+    match /facilities/{facilityId} {
+      allow get: if isValidId(facilityId) && (existing().isEnabled == true || isAdmin());
+      allow list: if resource.data.isEnabled == true || isAdmin();
+      allow create: if isValidId(facilityId) && isAdmin() && isValidFacility(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(facilityId) && isAdmin() && isValidFacility(incoming()) &&
+        incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(facilityId) && isAdmin();
+    }
+
+    // Testimonials collection
+    match /testimonials/{testimonialId} {
+      allow get: if isValidId(testimonialId) && (existing().isEnabled == true || isAdmin());
+      allow list: if resource.data.isEnabled == true || isAdmin();
+      allow create: if isValidId(testimonialId) && isAdmin() && isValidTestimonial(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(testimonialId) && isAdmin() && isValidTestimonial(incoming()) &&
+        incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(testimonialId) && isAdmin();
+    }
+
+    // Website settings collection
+    match /websiteSettings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create: if isValidId(settingId) && isAdmin() && isValidWebsiteSettings(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(settingId) && isAdmin() && isValidWebsiteSettings(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(settingId) && isAdmin();
+    }
+
+    // Contact messages collection
+    match /contactMessages/{messageId} {
+      allow get: if isValidId(messageId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(messageId) && isValidContactMessage(incoming()) &&
+        incoming().isRead == false &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(messageId) && isAdmin() && isValidContactMessage(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isValidId(messageId) && isAdmin();
+    }
+  }
+}
