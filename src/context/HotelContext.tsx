@@ -58,39 +58,62 @@ export function HotelProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
-  // Auth listener & admin role check
+  // Auth listener & admin role check. A failed or stalled Firestore lookup
+  // must never leave the admin route stuck on its verification screen.
   useEffect(() => {
+    let active = true;
+    let authCheckId = 0;
+
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
+      const currentCheckId = ++authCheckId;
+      setAuthReady(false);
       setUser(currentUser);
+      setIsAdmin(false);
+
       if (!currentUser) {
-        setIsAdmin(false);
-        setAuthReady(true);
+        if (active && currentCheckId === authCheckId) setAuthReady(true);
         return;
       }
 
-      const emailVerified = currentUser.emailVerified;
-      const isBootstrapped =
-        emailVerified && currentUser.email?.toLowerCase() === BOOTSTRAPPED_ADMIN_EMAIL.toLowerCase();
+      try {
+        const normalizedEmail = currentUser.email?.trim().toLowerCase();
+        const isBootstrapped =
+          currentUser.emailVerified &&
+          normalizedEmail === BOOTSTRAPPED_ADMIN_EMAIL.trim().toLowerCase();
 
-      if (isBootstrapped) {
-        setIsAdmin(true);
-        setAuthReady(true);
-        return;
-      }
-
-      if (emailVerified) {
-        try {
-          const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
-          setIsAdmin(adminDoc.exists());
-        } catch {
-          setIsAdmin(false);
+        if (isBootstrapped) {
+          if (active && currentCheckId === authCheckId) setIsAdmin(true);
+          return;
         }
-      } else {
-        setIsAdmin(false);
+
+        let adminDocExists = false;
+        if (currentUser.emailVerified) {
+          // Bound the role lookup so a network/offline Firestore request cannot
+          // keep the entire admin page in a permanent loading state.
+          adminDocExists = await Promise.race([
+            getDoc(doc(db, 'admins', currentUser.uid)).then((snapshot) => snapshot.exists()),
+            new Promise<boolean>((resolve) => {
+              setTimeout(() => resolve(false), 8000);
+            }),
+          ]);
+        }
+
+        if (active && currentCheckId === authCheckId) {
+          setIsAdmin(adminDocExists);
+        }
+      } catch (error) {
+        console.error('Admin role verification failed:', error);
+        if (active && currentCheckId === authCheckId) setIsAdmin(false);
+      } finally {
+        if (active && currentCheckId === authCheckId) setAuthReady(true);
       }
-      setAuthReady(true);
     });
-    return () => unsub();
+
+    return () => {
+      active = false;
+      authCheckId += 1;
+      unsub();
+    };
   }, []);
 
   // Public Firestore listeners
