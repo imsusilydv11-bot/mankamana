@@ -13,9 +13,7 @@ export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export const BOOTSTRAPPED_ADMIN_EMAIL =
-  (import.meta.env.VITE_ADMIN_EMAIL as string | undefined)?.trim() ||
-  'alnisrpurchase@gmail.com';
+export const BOOTSTRAPPED_ADMIN_EMAIL = 'imsusilydv1101@gmail.com';
 
 export enum OperationType {
   CREATE = 'create',
@@ -37,7 +35,7 @@ export interface FirestoreErrorInfo {
     isAnonymous?: boolean | null;
     tenantId?: string | null;
     providerInfo?: {
-      providerId?: string | null;
+      providerId?: string;
       email?: string | null;
     }[];
   };
